@@ -1,0 +1,4 @@
+Hydrasdk
+========
+Package hydrasdk is a lightweight sdk for https://www.ory.am/products/hydra
+The sdk that they provide is more complete but also huge.
