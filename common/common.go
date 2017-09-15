@@ -27,7 +27,7 @@
  * Copyright 2017 ARDUINO AG (http://www.arduino.cc/)
  */
 
-package hydrasdk
+package common
 
 import (
 	"bytes"
@@ -43,7 +43,8 @@ import (
 	"golang.org/x/oauth2/clientcredentials"
 )
 
-func joinURL(u *url.URL, args ...string) (ep *url.URL) {
+// JoinURL creates an url from the given parts
+func JoinURL(u *url.URL, args ...string) (ep *url.URL) {
 	ep = copyURL(u)
 	ep.Path = path.Join(append([]string{ep.Path}, args...)...)
 	return ep
@@ -55,8 +56,8 @@ func copyURL(u *url.URL) *url.URL {
 	return a
 }
 
-// bind does a get request and binds the body to the given interface
-func bind(client *http.Client, req *http.Request, o interface{}) error {
+// Bind does a get request and binds the body to the given interface
+func Bind(client *http.Client, req *http.Request, o interface{}) error {
 	resp, err := client.Do(req)
 	if err != nil {
 		return errors.Wrapf(err, "execute request %+v", req)
@@ -76,7 +77,8 @@ func bind(client *http.Client, req *http.Request, o interface{}) error {
 	return nil
 }
 
-func authenticate(id, secret, cluster string) (*url.URL, *http.Client, error) {
+// Authenticate returns the url of the cluster and an authenticated Client
+func Authenticate(id, secret, cluster string) (*url.URL, *http.Client, error) {
 	uri, err := url.Parse(cluster)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "parse url %s", cluster)
@@ -84,7 +86,7 @@ func authenticate(id, secret, cluster string) (*url.URL, *http.Client, error) {
 	credentials := clientcredentials.Config{
 		ClientID:     id,
 		ClientSecret: secret,
-		TokenURL:     joinURL(uri, "oauth2/token").String(),
+		TokenURL:     JoinURL(uri, "oauth2/token").String(),
 		Scopes:       []string{"hydra"},
 	}
 

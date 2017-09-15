@@ -27,7 +27,7 @@
  * Copyright 2017 ARDUINO AG (http://www.arduino.cc/)
  */
 
-package hydrasdk
+package introspector
 
 import (
 	"bytes"
@@ -38,6 +38,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bcmi-labs/hydrasdk/common"
 	"github.com/codeclysm/introspector"
 	"github.com/pkg/errors"
 )
@@ -52,14 +53,14 @@ type Introspector struct {
 // NewIntrospector returns a Introspector connected to the hydra cluster
 // it can fail if the cluster is not a valid url, or if the id and secret don't work
 func NewIntrospector(id, secret, cluster string) (*Introspector, error) {
-	endpoint, client, err := authenticate(id, secret, cluster)
+	endpoint, client, err := common.Authenticate(id, secret, cluster)
 	if err != nil {
 		return nil, errors.Wrap(err, "Instantiate Introspector")
 	}
 
 	manager := Introspector{
-		AllowedEndpoint:    joinURL(endpoint, "warden", "token", "allowed"),
-		IntrospectEndpoint: joinURL(endpoint, "oauth2", "introspect"),
+		AllowedEndpoint:    common.JoinURL(endpoint, "warden", "token", "allowed"),
+		IntrospectEndpoint: common.JoinURL(endpoint, "oauth2", "introspect"),
 		Client:             client,
 	}
 	return &manager, nil
@@ -82,7 +83,7 @@ func (m *Introspector) Introspect(token string) (*introspector.Introspection, er
 	req.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
 
 	var i introspector.Introspection
-	err = bind(m.Client, req, &i)
+	err = common.Bind(m.Client, req, &i)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +132,7 @@ func (m *Introspector) Allowed(token string, perm introspector.Permission, scope
 	req.Header.Add("Content-Length", strconv.Itoa(len(data)))
 
 	var i res
-	err = bind(m.Client, req, &i)
+	err = common.Bind(m.Client, req, &i)
 	if err != nil {
 		return nil, false, err
 	}

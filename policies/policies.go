@@ -27,7 +27,7 @@
  * Copyright 2017 ARDUINO AG (http://www.arduino.cc/)
  */
 
-package hydrasdk
+package policies
 
 import (
 	"bytes"
@@ -35,11 +35,12 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/bcmi-labs/hydrasdk/common"
 	"github.com/pkg/errors"
 )
 
-// PoliciesManager provides methods to create and update ladon policies
-type PoliciesManager struct {
+// Manager provides methods to create and update ladon policies
+type Manager struct {
 	Endpoint *url.URL
 	Client   *http.Client
 }
@@ -56,22 +57,22 @@ type Policy struct {
 	Conditions  map[string]interface{} `json:"conditions"`
 }
 
-// NewPoliciesManager returns a PoliciesManager connected to the hydra cluster
+// NewManager returns a Manager connected to the hydra cluster
 // it can fail if the cluster is not a valid url, or if the id and secret don't work
-func NewPoliciesManager(id, secret, cluster string) (*PoliciesManager, error) {
-	endpoint, client, err := authenticate(id, secret, cluster)
+func NewManager(id, secret, cluster string) (*Manager, error) {
+	endpoint, client, err := common.Authenticate(id, secret, cluster)
 	if err != nil {
 		return nil, errors.Wrap(err, "Instantiate ClientManager")
 	}
-	manager := PoliciesManager{
-		Endpoint: joinURL(endpoint, "policies"),
+	manager := Manager{
+		Endpoint: common.JoinURL(endpoint, "policies"),
 		Client:   client,
 	}
 	return &manager, nil
 }
 
 // Create calls the hydra api to create a new policy
-func (m *PoliciesManager) Create(policy *Policy) error {
+func (m *Manager) Create(policy *Policy) error {
 	url := m.Endpoint.String()
 
 	payload, err := json.Marshal(policy)
@@ -84,7 +85,7 @@ func (m *PoliciesManager) Create(policy *Policy) error {
 		return errors.Wrapf(err, "new request for %s", url)
 	}
 
-	err = bind(m.Client, req, &policy)
+	err = common.Bind(m.Client, req, &policy)
 	if err != nil {
 		return errors.Wrap(err, "Create")
 	}
@@ -92,8 +93,8 @@ func (m *PoliciesManager) Create(policy *Policy) error {
 }
 
 // Update calls the hydra api to update a specific policy
-func (m *PoliciesManager) Update(id string, policy *Policy) error {
-	url := joinURL(m.Endpoint, id).String()
+func (m *Manager) Update(id string, policy *Policy) error {
+	url := common.JoinURL(m.Endpoint, id).String()
 
 	payload, err := json.Marshal(policy)
 	if err != nil {
@@ -105,7 +106,7 @@ func (m *PoliciesManager) Update(id string, policy *Policy) error {
 		return errors.Wrapf(err, "new request for %s", url)
 	}
 
-	err = bind(m.Client, req, nil)
+	err = common.Bind(m.Client, req, nil)
 	if err != nil {
 		return errors.Wrapf(err, "Update %s", id)
 	}
@@ -113,7 +114,7 @@ func (m *PoliciesManager) Update(id string, policy *Policy) error {
 }
 
 // GetAll calls the hydra api to return all the policies
-func (m *PoliciesManager) GetAll() ([]Policy, error) {
+func (m *Manager) GetAll() ([]Policy, error) {
 	req, err := http.NewRequest("GET", m.Endpoint.String(), nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "new request for %s", m.Endpoint.String())
@@ -121,7 +122,7 @@ func (m *PoliciesManager) GetAll() ([]Policy, error) {
 
 	var policies []Policy
 
-	err = bind(m.Client, req, &policies)
+	err = common.Bind(m.Client, req, &policies)
 	if err != nil {
 		return nil, errors.Wrap(err, "GetAll")
 	}
@@ -129,8 +130,8 @@ func (m *PoliciesManager) GetAll() ([]Policy, error) {
 }
 
 // Get calls the hydra api to return a specific policy
-func (m *PoliciesManager) Get(id string) (*Policy, error) {
-	url := joinURL(m.Endpoint, id).String()
+func (m *Manager) Get(id string) (*Policy, error) {
+	url := common.JoinURL(m.Endpoint, id).String()
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -139,7 +140,7 @@ func (m *PoliciesManager) Get(id string) (*Policy, error) {
 
 	var policy Policy
 
-	err = bind(m.Client, req, &policy)
+	err = common.Bind(m.Client, req, &policy)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Get %s", id)
 	}
@@ -147,15 +148,15 @@ func (m *PoliciesManager) Get(id string) (*Policy, error) {
 }
 
 // Delete calls the hydra api to remove a specific policy
-func (m *PoliciesManager) Delete(id string) error {
-	url := joinURL(m.Endpoint, id).String()
+func (m *Manager) Delete(id string) error {
+	url := common.JoinURL(m.Endpoint, id).String()
 
 	req, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
 		return errors.Wrapf(err, "new request for %s", url)
 	}
 
-	err = bind(m.Client, req, nil)
+	err = common.Bind(m.Client, req, nil)
 	if err != nil {
 		return errors.Wrapf(err, "Delete %s", id)
 	}

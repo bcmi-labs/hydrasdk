@@ -27,14 +27,14 @@
  * Copyright 2017 ARDUINO AG (http://www.arduino.cc/)
  */
 
-// Package hydrasdk is a lightweight sdk for https://www.ory.am/products/hydra
-// The sdk that they provide is more complete but also huge.
-package hydrasdk
+// Package clients contains methods to retrieve and save hydra clients
+package clients
 
 import (
 	"net/http"
 	"net/url"
 
+	"github.com/bcmi-labs/hydrasdk/common"
 	"github.com/pkg/errors"
 )
 
@@ -70,13 +70,13 @@ type ClientManager struct {
 // NewClientManager returns a ClientManager connected to the hydra cluster
 // it can fail if the cluster is not a valid url, or if the id and secret don't work
 func NewClientManager(id, secret, cluster string) (*ClientManager, error) {
-	endpoint, client, err := authenticate(id, secret, cluster)
+	endpoint, client, err := common.Authenticate(id, secret, cluster)
 	if err != nil {
 		return nil, errors.Wrap(err, "Instantiate ClientManager")
 	}
 
 	manager := ClientManager{
-		Endpoint: joinURL(endpoint, "clients"),
+		Endpoint: common.JoinURL(endpoint, "clients"),
 		Client:   client,
 	}
 	return &manager, nil
@@ -84,7 +84,7 @@ func NewClientManager(id, secret, cluster string) (*ClientManager, error) {
 
 // Get queries the hydra api to retrieve a specific client by their ID.
 func (m ClientManager) Get(id string) (*Client, error) {
-	url := joinURL(m.Endpoint, id).String()
+	url := common.JoinURL(m.Endpoint, id).String()
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -93,7 +93,7 @@ func (m ClientManager) Get(id string) (*Client, error) {
 
 	var client *Client
 
-	err = bind(m.Client, req, client)
+	err = common.Bind(m.Client, req, client)
 	if err != nil {
 		return nil, err
 	}

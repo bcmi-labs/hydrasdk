@@ -27,13 +27,14 @@
  * Copyright 2017 ARDUINO AG (http://www.arduino.cc/)
  */
 
-package hydrasdk
+package keys
 
 import (
 	"crypto/rsa"
 	"net/http"
 	"net/url"
 
+	"github.com/bcmi-labs/hydrasdk/common"
 	"github.com/pkg/errors"
 	jose "github.com/square/go-jose"
 )
@@ -56,12 +57,12 @@ type CachedKeyManager struct {
 // NewCachedKeyManager returns a CachedKeyManager connected to the hydra cluster
 // it can fail if the cluster is not a valid url, or if the id and secret don't work
 func NewCachedKeyManager(id, secret, cluster string) (*CachedKeyManager, error) {
-	endpoint, client, err := authenticate(id, secret, cluster)
+	endpoint, client, err := common.Authenticate(id, secret, cluster)
 	if err != nil {
 		return nil, errors.Wrap(err, "Instantiate ClientManager")
 	}
 	manager := CachedKeyManager{
-		Endpoint:    joinURL(endpoint, "keys"),
+		Endpoint:    common.JoinURL(endpoint, "keys"),
 		Client:      client,
 		rsaPublics:  map[string]*rsa.PublicKey{},
 		rsaPrivates: map[string]*rsa.PrivateKey{},
@@ -77,7 +78,7 @@ func (m CachedKeyManager) GetRSAPublic(set string) (*rsa.PublicKey, error) {
 		return key, nil
 	}
 
-	url := joinURL(m.Endpoint, set).String()
+	url := common.JoinURL(m.Endpoint, set).String()
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -85,7 +86,7 @@ func (m CachedKeyManager) GetRSAPublic(set string) (*rsa.PublicKey, error) {
 	}
 
 	var keyset jose.JsonWebKeySet
-	err = bind(m.Client, req, &keyset)
+	err = common.Bind(m.Client, req, &keyset)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +114,7 @@ func (m CachedKeyManager) GetRSAPrivate(set string) (*rsa.PrivateKey, error) {
 		return key, nil
 	}
 
-	url := joinURL(m.Endpoint, set).String()
+	url := common.JoinURL(m.Endpoint, set).String()
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -121,7 +122,7 @@ func (m CachedKeyManager) GetRSAPrivate(set string) (*rsa.PrivateKey, error) {
 	}
 
 	var keyset jose.JsonWebKeySet
-	err = bind(m.Client, req, &keyset)
+	err = common.Bind(m.Client, req, &keyset)
 	if err != nil {
 		return nil, err
 	}

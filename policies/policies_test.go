@@ -27,27 +27,27 @@
  * Copyright 2017 ARDUINO AG (http://www.arduino.cc/)
  */
 
-package hydrasdk_test
+package policies_test
 
 import (
 	"testing"
 
-	"github.com/bcmi-labs/hydrasdk"
+	"github.com/bcmi-labs/hydrasdk/policies"
 )
 
 func TestGetPolicies(t *testing.T) {
-	policies, err := hydrasdk.NewPoliciesManager("admin", "demo-password", "http://localhost:4444")
+	manager, err := policies.NewManager("admin", "demo-password", "http://localhost:4444")
 	if err != nil {
 		t.Error(err)
 	}
 
 	// Create some policies
-	policies.Create(&hydrasdk.Policy{ID: "1"})
-	policies.Create(&hydrasdk.Policy{ID: "2"})
-	policies.Create(&hydrasdk.Policy{ID: "3"})
-	policies.Create(&hydrasdk.Policy{ID: "4"})
+	manager.Create(&policies.Policy{ID: "1"})
+	manager.Create(&policies.Policy{ID: "2"})
+	manager.Create(&policies.Policy{ID: "3"})
+	manager.Create(&policies.Policy{ID: "4"})
 
-	list, err := policies.GetAll()
+	list, err := manager.GetAll()
 	if err != nil {
 		t.Error(err)
 	}
@@ -57,16 +57,16 @@ func TestGetPolicies(t *testing.T) {
 	}
 
 	// Cleanup
-	cleanPolicies(policies)
+	cleanPolicies(manager)
 }
 
 func TestCreatePolicy(t *testing.T) {
-	policies, err := hydrasdk.NewPoliciesManager("admin", "demo-password", "http://localhost:4444")
+	manager, err := policies.NewManager("admin", "demo-password", "http://localhost:4444")
 	if err != nil {
 		t.Error(err)
 	}
 
-	payload := hydrasdk.Policy{
+	payload := policies.Policy{
 		ID:          "example policy",
 		Description: "exmaple policy",
 		Subjects:    []string{"me", "my-friend"},
@@ -75,21 +75,21 @@ func TestCreatePolicy(t *testing.T) {
 		Resources:   []string{"banana", "cake"},
 	}
 
-	err = policies.Create(&payload)
+	err = manager.Create(&payload)
 	if err != nil {
 		t.Error(err)
 	}
 
-	policy, err := policies.Get(payload.ID)
+	policy, err := manager.Get(payload.ID)
 	if policy.ID != payload.ID {
 		t.Errorf("Expected ID='%s', got %s", payload.ID, policy.ID)
 	}
 
-	cleanPolicies(policies)
+	cleanPolicies(manager)
 
 }
 
-func cleanPolicies(policies *hydrasdk.PoliciesManager) {
+func cleanPolicies(policies *policies.Manager) {
 	policies.Delete("1")
 	policies.Delete("2")
 	policies.Delete("3")
