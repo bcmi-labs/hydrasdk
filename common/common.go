@@ -45,12 +45,13 @@ import (
 
 // JoinURL creates an url from the given parts
 func JoinURL(u *url.URL, args ...string) (ep *url.URL) {
-	ep = copyURL(u)
+	ep = CopyURL(u)
 	ep.Path = path.Join(append([]string{ep.Path}, args...)...)
 	return ep
 }
 
-func copyURL(u *url.URL) *url.URL {
+// CopyURL returns a copy of the url
+func CopyURL(u *url.URL) *url.URL {
 	a := new(url.URL)
 	*a = *u
 	return a
