@@ -36,7 +36,7 @@ import (
 
 	"github.com/bcmi-labs/hydrasdk/common"
 	"github.com/pkg/errors"
-	jose "github.com/square/go-jose"
+	jose "gopkg.in/square/go-jose.v2"
 )
 
 // KeyGetter provides functions to retrieve a key from an hydra set (tipically the first)
@@ -85,7 +85,7 @@ func (m CachedKeyManager) GetRSAPublic(set string) (*rsa.PublicKey, error) {
 		return nil, errors.Wrapf(err, "new request for %s", url)
 	}
 
-	var keyset jose.JsonWebKeySet
+	var keyset jose.JSONWebKeySet
 	err = common.Bind(m.Client, req, &keyset)
 	if err != nil {
 		return nil, err
@@ -121,7 +121,7 @@ func (m CachedKeyManager) GetRSAPrivate(set string) (*rsa.PrivateKey, error) {
 		return nil, errors.Wrapf(err, "new request for %s", url)
 	}
 
-	var keyset jose.JsonWebKeySet
+	var keyset jose.JSONWebKeySet
 	err = common.Bind(m.Client, req, &keyset)
 	if err != nil {
 		return nil, err
