@@ -27,7 +27,7 @@
  * Copyright 2017 ARDUINO AG (http://www.arduino.cc/)
  */
 
-package introspector
+package introspect
 
 import (
 	"bytes"
