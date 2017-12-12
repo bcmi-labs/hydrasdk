@@ -70,7 +70,7 @@ type ClientManager struct {
 // NewClientManager returns a ClientManager connected to the hydra cluster
 // it can fail if the cluster is not a valid url, or if the id and secret don't work
 func NewClientManager(id, secret, cluster string) (*ClientManager, error) {
-	endpoint, client, err := common.Authenticate(id, secret, cluster)
+	endpoint, client, err := common.Authenticate(id, secret, cluster, "hydra")
 	if err != nil {
 		return nil, errors.Wrap(err, "Instantiate ClientManager")
 	}

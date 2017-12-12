@@ -79,7 +79,7 @@ func Bind(client *http.Client, req *http.Request, o interface{}) error {
 }
 
 // Authenticate returns the url of the cluster and an authenticated Client
-func Authenticate(id, secret, cluster string) (*url.URL, *http.Client, error) {
+func Authenticate(id, secret, cluster string, scopes ...string) (*url.URL, *http.Client, error) {
 	uri, err := url.Parse(cluster)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "parse url %s", cluster)
@@ -88,7 +88,7 @@ func Authenticate(id, secret, cluster string) (*url.URL, *http.Client, error) {
 		ClientID:     id,
 		ClientSecret: secret,
 		TokenURL:     JoinURL(uri, "oauth2/token").String(),
-		Scopes:       []string{"hydra"},
+		Scopes:       scopes,
 	}
 
 	ctx := context.Background()

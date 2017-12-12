@@ -60,7 +60,7 @@ type Policy struct {
 // NewManager returns a Manager connected to the hydra cluster
 // it can fail if the cluster is not a valid url, or if the id and secret don't work
 func NewManager(id, secret, cluster string) (*Manager, error) {
-	endpoint, client, err := common.Authenticate(id, secret, cluster)
+	endpoint, client, err := common.Authenticate(id, secret, cluster, "hydra")
 	if err != nil {
 		return nil, errors.Wrap(err, "Instantiate ClientManager")
 	}
