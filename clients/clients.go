@@ -31,6 +31,8 @@
 package clients
 
 import (
+	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/url"
 
@@ -43,16 +45,16 @@ type Client struct {
 	ID                string   `json:"id" gorethink:"id"`
 	Name              string   `json:"client_name" gorethink:"client_name"`
 	Secret            string   `json:"client_secret,omitempty" gorethink:"client_secret"`
-	RedirectURIs      []string `json:"redirect_uris" gorethink:"redirect_uris"`
+	RedirectURIs      []string `json:"redirect_uris,omitempty" gorethink:"redirect_uris"`
 	GrantTypes        []string `json:"grant_types" gorethink:"grant_types"`
-	ResponseTypes     []string `json:"response_types" gorethink:"response_types"`
-	Scope             string   `json:"scope" gorethink:"scope"`
-	Owner             string   `json:"owner" gorethink:"owner"`
-	PolicyURI         string   `json:"policy_uri" gorethink:"policy_uri"`
-	TermsOfServiceURI string   `json:"tos_uri" gorethink:"tos_uri"`
-	ClientURI         string   `json:"client_uri" gorethink:"client_uri"`
-	LogoURI           string   `json:"logo_uri" gorethink:"logo_uri"`
-	Contacts          []string `json:"contacts" gorethink:"contacts"`
+	ResponseTypes     []string `json:"response_types,omitempty" gorethink:"response_types"`
+	Scope             string   `json:"scope,omitempty" gorethink:"scope"`
+	Owner             string   `json:"owner,omitempty" gorethink:"owner"`
+	PolicyURI         string   `json:"policy_uri,omitempty" gorethink:"policy_uri"`
+	TermsOfServiceURI string   `json:"tos_uri,omitempty" gorethink:"tos_uri"`
+	ClientURI         string   `json:"client_uri,omitempty" gorethink:"client_uri"`
+	LogoURI           string   `json:"logo_uri,omitempty" gorethink:"logo_uri"`
+	Contacts          []string `json:"contacts,omitempty" gorethink:"contacts"`
 	Public            bool     `json:"public" gorethink:"public"`
 }
 
@@ -61,29 +63,67 @@ type ClientGetter interface {
 	Get(id string) (*Client, error)
 }
 
-// ClientManager uses hydra rest apis to retrieve clients
-type ClientManager struct {
+// Manager uses hydra rest apis to retrieve clients
+type Manager struct {
 	Endpoint *url.URL
 	Client   *http.Client
 }
 
-// NewClientManager returns a ClientManager connected to the hydra cluster
+// NewManager returns a Manager connected to the hydra cluster
 // it can fail if the cluster is not a valid url, or if the id and secret don't work
-func NewClientManager(id, secret, cluster string) (*ClientManager, error) {
+func NewManager(id, secret, cluster string) (*Manager, error) {
 	endpoint, client, err := common.Authenticate(id, secret, cluster, "hydra")
 	if err != nil {
-		return nil, errors.Wrap(err, "Instantiate ClientManager")
+		return nil, errors.Wrap(err, "Instantiate Manager")
 	}
 
-	manager := ClientManager{
+	manager := Manager{
 		Endpoint: common.JoinURL(endpoint, "clients"),
 		Client:   client,
 	}
 	return &manager, nil
 }
 
+// Create queries the hydra api to create a new client
+func (m Manager) Create(client *Client) error {
+	url := m.Endpoint.String()
+
+	payload, err := json.Marshal(*client)
+	if err != nil {
+		return errors.Wrapf(err, "json marshal of %v", client)
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
+	if err != nil {
+		return errors.Wrapf(err, "new request for %s", url)
+	}
+
+	err = common.Bind(m.Client, req, client)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Delete queries the hydra api to retrieve a specific client by their ID.
+func (m Manager) Delete(id string) error {
+	url := common.JoinURL(m.Endpoint, id).String()
+
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		return errors.Wrapf(err, "new request for %s", url)
+	}
+
+	err = common.Bind(m.Client, req, nil)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // Get queries the hydra api to retrieve a specific client by their ID.
-func (m ClientManager) Get(id string) (*Client, error) {
+func (m Manager) Get(id string) (*Client, error) {
 	url := common.JoinURL(m.Endpoint, id).String()
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -98,4 +138,41 @@ func (m ClientManager) Get(id string) (*Client, error) {
 		return nil, err
 	}
 	return client, nil
+}
+
+// GetAll calls the hydra api to return all the clients
+func (m *Manager) GetAll() (map[string]Client, error) {
+	req, err := http.NewRequest("GET", m.Endpoint.String(), nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "new request for %s", m.Endpoint.String())
+	}
+
+	var clients map[string]Client
+
+	err = common.Bind(m.Client, req, &clients)
+	if err != nil {
+		return nil, errors.Wrap(err, "GetAll")
+	}
+	return clients, nil
+}
+
+// Update calls the hydra api to update a specific client
+func (m *Manager) Update(id string, client *Client) error {
+	url := common.JoinURL(m.Endpoint, id).String()
+
+	payload, err := json.Marshal(client)
+	if err != nil {
+		return errors.Wrapf(err, "json marshal of %v", client)
+	}
+
+	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(payload))
+	if err != nil {
+		return errors.Wrapf(err, "new request for %s", url)
+	}
+
+	err = common.Bind(m.Client, req, client)
+	if err != nil {
+		return errors.Wrapf(err, "Update %s", id)
+	}
+	return nil
 }
