@@ -67,7 +67,7 @@ func NewManager(id, secret, cluster string) (*Manager, error) {
 }
 
 // List calls the hydra api to list all groups
-func (m *Manager) List(group *Group) ([]string, error) {
+func (m *Manager) List() ([]string, error) {
 	url := m.Endpoint.String()
 
 	req, err := http.NewRequest("GET", url, nil)
