@@ -66,6 +66,24 @@ func NewManager(id, secret, cluster string) (*Manager, error) {
 	return &manager, nil
 }
 
+// List calls the hydra api to list all groups
+func (m *Manager) List(group *Group) ([]string, error) {
+	url := m.Endpoint.String()
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "new request for %s", url)
+	}
+
+	var groups []string
+
+	err = common.Bind(m.Client, req, &groups)
+	if err != nil {
+		return nil, errors.Wrap(err, "Create")
+	}
+	return groups, nil
+}
+
 // Create calls the hydra api to create a new group
 func (m *Manager) Create(group *Group) error {
 	url := m.Endpoint.String()
