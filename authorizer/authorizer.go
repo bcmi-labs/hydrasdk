@@ -66,7 +66,7 @@ func NewAuthorizer(id, secret, cluster string) (*Authorizer, error) {
 
 type req struct {
 	Scopes   []string          `json:"scopes"`
-	Token    string            `json:"token"`
+	Subject  string            `json:"subject"`
 	Resource string            `json:"resource"`
 	Action   string            `json:"action"`
 	Context  map[string]string `json:"context"`
@@ -79,6 +79,7 @@ type res struct {
 // Authorized calls the hydra endpoint to see if a subject has the permission to perform an action
 func (m *Authorizer) Authorized(i *introspector.Introspection, perm authorizer.Permission) (bool, error) {
 	payload := req{
+		Subject:  i.Subject,
 		Resource: perm.Resource,
 		Action:   perm.Action,
 		Context:  map[string]string{},
