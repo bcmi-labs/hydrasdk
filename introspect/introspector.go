@@ -87,8 +87,12 @@ func (m *Introspector) Introspect(token string) (*introspector.Introspection, er
 	if err != nil {
 		return nil, err
 	}
-	return &i, nil
 
+	if !i.Active {
+		return nil, errors.New("token not active")
+	}
+
+	return &i, nil
 }
 
 type req struct {
