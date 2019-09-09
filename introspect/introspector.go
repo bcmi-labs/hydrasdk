@@ -39,7 +39,7 @@ import (
 	"time"
 
 	"github.com/bcmi-labs/hydrasdk/common"
-	"github.com/codeclysm/introspector"
+	"github.com/codeclysm/introspector/v2"
 	"github.com/pkg/errors"
 )
 
