@@ -35,11 +35,9 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 
-	"github.com/bcmi-labs/auth0sdk/authorizer"
 	"github.com/bcmi-labs/hydrasdk/common"
-	"github.com/codeclysm/introspector"
+	"github.com/ory/ladon"
 	"github.com/pkg/errors"
 )
 
@@ -49,7 +47,7 @@ type Authorizer struct {
 	Client          *http.Client
 }
 
-// NewAuthorizer returns a Authorizer connected to the hydra cluster
+// NewAuthorizer returns a Warden authorizer connected to the hydra cluster
 // it can fail if the cluster is not a valid url, or if the id and secret don't work
 func NewAuthorizer(id, secret, cluster string) (*Authorizer, error) {
 	endpoint, client, err := common.Authenticate(id, secret, cluster, "hydra")
@@ -64,50 +62,33 @@ func NewAuthorizer(id, secret, cluster string) (*Authorizer, error) {
 	return &manager, nil
 }
 
-type req struct {
-	Scopes   []string          `json:"scopes"`
-	Subject  string            `json:"subject"`
-	Resource string            `json:"resource"`
-	Action   string            `json:"action"`
-	Context  map[string]string `json:"context"`
-}
-
-type res struct {
-	Allowed bool `json:"allowed"`
-}
-
-// Authorized calls the hydra endpoint to see if a subject has the permission to perform an action
-func (m *Authorizer) Authorized(i *introspector.Introspection, perm authorizer.Permission) (bool, error) {
-	payload := req{
-		Subject:  i.Subject,
-		Resource: perm.Resource,
-		Action:   perm.Action,
-		Context:  map[string]string{},
-	}
-
-	for key, value := range perm.Context {
-		payload.Context[key] = value.(string)
-	}
-
-	data, err := json.Marshal(&payload)
+// IsAllowed calls the hydra endpoint to see if a subject has the permission to perform an action
+func (m *Authorizer) IsAllowed(request *ladon.Request) error {
+	data, err := json.Marshal(&request)
 	if err != nil {
-		return false, errors.Wrapf(err, "marshal payload %+v", strings.NewReader("{"))
+		return errors.Wrapf(err, "marshal request")
 	}
 
 	url := m.AllowedEndpoint.String()
 	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
 	if err != nil {
-		return false, errors.Wrapf(err, "new request for %s", url)
+		return errors.Wrapf(err, "new request for %s", url)
 	}
 
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Content-Length", strconv.Itoa(len(data)))
 
-	var res res
+	var res struct {
+		Allowed bool `json:"allowed"`
+	}
 	err = common.Bind(m.Client, req, &res)
 	if err != nil {
-		return false, err
+		return err
 	}
 
-	return res.Allowed, nil
+	if !res.Allowed {
+		return errors.New("not allowed")
+	}
+
+	return nil
 }
