@@ -31,15 +31,12 @@ package introspect
 
 import (
 	"bytes"
-	"encoding/json"
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
-	"time"
 
 	"github.com/bcmi-labs/hydrasdk/common"
-	"github.com/codeclysm/introspector/v2"
+	"github.com/codeclysm/introspector/v3"
 	"github.com/pkg/errors"
 )
 
@@ -68,7 +65,7 @@ func NewIntrospector(id, secret, cluster string) (*Introspector, error) {
 
 // Introspect queries the endpoint with an http request. It expects that the endpoint
 // implements https://tools.ietf.org/html/rfc7662
-func (m *Introspector) Introspect(token string) (*introspector.Introspection, error) {
+func (m *Introspector) Introspect(token string) (introspector.Introspection, error) {
 	data := url.Values{
 		"token": []string{token},
 	}
@@ -76,7 +73,7 @@ func (m *Introspector) Introspect(token string) (*introspector.Introspection, er
 	url := m.IntrospectEndpoint.String()
 	req, err := http.NewRequest("POST", url, bytes.NewBufferString(data.Encode()))
 	if err != nil {
-		return nil, errors.Wrapf(err, "new request for %s", url)
+		return introspector.Introspection{}, errors.Wrapf(err, "new request for %s", url)
 	}
 
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
@@ -85,65 +82,12 @@ func (m *Introspector) Introspect(token string) (*introspector.Introspection, er
 	var i introspector.Introspection
 	err = common.Bind(m.Client, req, &i)
 	if err != nil {
-		return nil, err
+		return introspector.Introspection{}, err
 	}
 
 	if !i.Active {
-		return nil, errors.New("token not active")
+		return introspector.Introspection{}, errors.New("token not active")
 	}
 
-	return &i, nil
-}
-
-type req struct {
-	Scopes   []string          `json:"scopes"`
-	Token    string            `json:"token"`
-	Resource string            `json:"resource"`
-	Action   string            `json:"action"`
-	Context  map[string]string `json:"context"`
-}
-
-type res struct {
-	introspector.Introspection
-	Allowed   bool      `json:"allowed"`
-	IssuedAt  time.Time `json:"iat"`
-	ExpiresAt time.Time `json:"exp"`
-	Scopes    []string  `json:"scopes"`
-}
-
-// Allowed calls the hydra endpoint to retrieve the info of a token and see if it has the permission to perform an action
-func (m *Introspector) Allowed(token string, perm introspector.Permission, scopes ...string) (*introspector.Introspection, bool, error) {
-	payload := req{
-		Token:    token,
-		Scopes:   scopes,
-		Resource: perm.Resource,
-		Action:   perm.Action,
-		Context:  perm.Context,
-	}
-
-	data, err := json.Marshal(&payload)
-	if err != nil {
-		return nil, false, errors.Wrapf(err, "marshal payload %+v", payload)
-	}
-
-	url := m.AllowedEndpoint.String()
-	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
-	if err != nil {
-		return nil, false, errors.Wrapf(err, "new request for %s", url)
-	}
-
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Content-Length", strconv.Itoa(len(data)))
-
-	var i res
-	err = common.Bind(m.Client, req, &i)
-	if err != nil {
-		return nil, false, err
-	}
-	i.Active = true
-	i.Introspection.Scope = strings.Join(i.Scopes, " ")
-	i.Introspection.IssuedAt = i.IssuedAt.Unix()
-	i.Introspection.ExpiresAt = i.ExpiresAt.Unix()
-
-	return &i.Introspection, i.Allowed, nil
+	return i, nil
 }
